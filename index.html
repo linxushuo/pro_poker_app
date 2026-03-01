@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AceTracker Cloud</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23121212'/><path d='M50 20 C25 45 15 65 35 75 C45 80 50 75 50 65 C50 75 55 80 65 75 C85 65 75 45 50 20 Z' fill='%23D4AF37'/><path d='M20 80 Q50 50 85 25' stroke='%23FF4757' stroke-width='4' fill='none' stroke-linecap='round' opacity='0.8'/><path d='M46 85 L54 85 L50 65 Z' fill='%23D4AF37'/></svg>">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { --gold: #D4AF37; --bg: #0F0F0F; --card: #1A1A1A; --win: #FF4757; --lose: #2ED573; --text: #E0E0E0; }
+        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; }
+
+        /* 开场动画 */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg);
+            z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+        .logo-anim { width: 80px; height: 80px; border: 2px solid var(--gold); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* 登录界面 */
+        #auth-section { padding: 30px; display: none; text-align: center; height: 100vh; justify-content: center; flex-direction: column; box-sizing: border-box; }
+        input { width: 100%; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--gold); }
+        .btn-main { background: var(--gold); color: black; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+        /* 主界面 */
+        #app-section { display: none; padding-bottom: 80px; }
+        .nav-tabs { display: flex; overflow-x: auto; padding: 10px; gap: 10px; background: var(--card); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+        .nav-item { padding: 8px 16px; border-radius: 20px; background: #2A2A2A; white-space: nowrap; font-size: 13px; color: #888; }
+        .nav-item.active { background: var(--gold); color: #000; font-weight: bold; }
+        
+        .main-content { padding: 15px; }
+        .chart-box { background: var(--card); border-radius: 16px; padding: 15px; height: 280px; margin-bottom: 15px; box-sizing: border-box; }
+
+        /* 快速录入 */
+        .batch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .chip { background: #2A2A2A; border: 1px solid #444; border-radius: 8px; padding: 12px 0; text-align: center; font-size: 13px; font-weight: bold; }
+        
+        /* 列表管理 */
+        .item-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--gold); }
+        .action-btns { display: flex; gap: 10px; margin-top: 12px; }
+        .btn-sm { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; color: white; font-family: inherit; }
+
+        .disclaimer { text-align: center; font-size: 10px; color: #444; padding: 20px; margin-top: 20px; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <div class="logo-anim">♠</div>
+        <h2 style="color: var(--gold); margin-top: 20px; letter-spacing: 4px;">AceTracker Cloud</h2>
+    </div>
+
+    <div id="auth-section">
+        <h2 style="color:var(--gold)">账号登录</h2>
+        <p style="color:#888; margin-bottom:30px;">请输入授权 QQ 邮箱获取登录链接</p>
+        <input type="email" id="emailInput" placeholder="example@qq.com">
+        <button class="btn-main" onclick="handleLogin()">获取登录链接</button>
+        <p style="font-size:12px; color:#555; margin-top:20px;">需管理员提前在 whitelist 表添加授权</p>
+    </div>
+
+    <div id="app-section">
+        <div class="nav-tabs" id="levelNav">
+            <div class="nav-item active" onclick="switchLevel('ALL')">全部汇总</div>
+            <div class="nav-item" onclick="switchLevel('0.5/1')">0.5/1</div>
+            <div class="nav-item" onclick="switchLevel('1/2')">1/2</div>
+            <div class="nav-item" onclick="switchLevel('10/20')">10/20</div>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-box" id="mainChart"></div>
+
+            <div style="background:var(--card); padding:15px; border-radius:16px;">
+                <h3 style="margin:0 0 10px 0; font-size:16px;">快速录入积分</h3>
+                <input type="number" id="quickAmount" placeholder="输入盈亏积分" style="margin-bottom:10px;">
+                <div class="batch-grid">
+                    <div class="chip" style="color:var(--win)" onclick="adjustAmount(100)">+100</div>
+                    <div class="chip" style="color:var(--win)" onclick="adjustAmount(500)">+500</div>
+                    <div class="chip" style="color:var(--lose)" onclick="adjustAmount(-100)">-100</div>
+                    <div class="chip" style="color:var(--lose)" onclick="adjustAmount(-500)">-500</div>
+                </div>
+                <button class="btn-main" onclick="submitData()" style="margin-top:15px; background:linear-gradient(to right, #D4AF37, #B8860B)">保存到云端</button>
+            </div>
+
+            <h3 style="margin:20px 0 10px 0; font-size:14px; color:#888;">近期历史明细</h3>
+            <div id="historyList"></div>
+        </div>
+        <div class="disclaimer">计算数据均为记分牌，远离赌博</div>
+    </div>
+
+    <script>
+        // --- 已自动填入你的 Supabase 密钥 ---
+        const SUPABASE_URL = 'https://bemgvdxisardejdvbnif.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_qfMjJSCX0FGWbgnurfcUEg_RCBvb9Pz';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let currentLevel = 'ALL';
+        let fullData = [];
+        let myChart = echarts.init(document.getElementById('mainChart'));
+
+        window.onload = async () => {
+            setTimeout(async () => {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').style.display = 'none', 800);
+
+                if (user) {
+                    currentUser = user;
+                    showApp();
+                } else {
+                    document.getElementById('auth-section').style.display = 'flex';
+                }
+            }, 2000);
+        };
+
+        async function handleLogin() {
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email) return alert("请输入邮箱");
+
+            // 检查 whitelist 表
+            const { data: white, error: whiteError } = await supabaseClient
+                .from('whitelist')
+                .select('*')
+                .eq('email', email);
+            
+            if (whiteError || !white || white.length === 0) {
+                return alert("该邮箱未获授权，请联系管理员添加白名单");
+            }
+
+            const { error } = await supabaseClient.auth.signInWithOtp({ 
+                email,
+                options: { emailRedirectTo: window.location.href }
+            });
+            if (error) alert("发送失败: " + error.message);
+            else alert("验证邮件已发出！请前往 QQ 邮箱查收并点击链接登录。");
+        }
+
+        function showApp() {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+            fetchData();
+        }
+
+        async function fetchData() {
+            const { data, error } = await supabaseClient
+                .from('poker_logs')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: true });
+            
+            if (!error) {
+                fullData = data;
+                render();
+            }
+        }
+
+        function adjustAmount(val) {
+            const input = document.getElementById('quickAmount');
+            input.value = (parseFloat(input.value) || 0) + val;
+        }
+
+        async function submitData() {
+            const val = parseFloat(document.getElementById('quickAmount').value);
+            if (isNaN(val)) return alert("请输入积分");
+
+            const { error } = await supabaseClient.from('poker_logs').insert([{
+                user_id: currentUser.id,
+                amount: val,
+                level: currentLevel === 'ALL' ? '1/2' : currentLevel
+            }]);
+
+            if (error) {
+                alert("保存失败，请检查 RLS 权限设置");
+            } else {
+                document.getElementById('quickAmount').value = '';
+                fetchData();
+            }
+        }
+
+        function render() {
+            const filtered = currentLevel === 'ALL' ? fullData : fullData.filter(d => d.level === currentLevel);
+            let sum = 0;
+            const lineData = filtered.map(d => { sum += d.amount; return sum; });
+            
+            myChart.setOption({
+                grid: { top: 40, bottom: 20, left: 50, right: 20 },
+                xAxis: { type: 'category', show: false },
+                yAxis: { type: 'value', splitLine: { lineStyle: { color: '#333' } } },
+                series: [{
+                    data: lineData, type: 'line', smooth: true, symbol: 'none',
+                    lineStyle: { color: '#D4AF37', width: 3 },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(212,175,55,0.3)'},{offset:1, color:'transparent'}]) }
+                }]
+            });
+
+            let html = '';
+            filtered.slice().reverse().forEach(d => {
+                html += `
+                    <div class="item-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:12px; color:#666;">${new Date(d.created_at).toLocaleString()}</span>
+                            <span style="color:${d.amount>=0?'var(--win)':'var(--lose)'}; font-weight:bold; font-size:18px;">${d.amount>=0?'+':''}${d.amount}</span>
+                        </div>
+                        <div class="action-btns">
+                            <button class="btn-sm" style="background:#2c3e50" onclick="alert('编辑功能开发中')"><i class="fas fa-edit"></i> 修改</button>
+                            <button class="btn-sm" style="background:#c0392b" onclick="deleteItem(${d.id})"><i class="fas fa-trash"></i> 移除</button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('historyList').innerHTML = html || '<p style="text-align:center;color:#444;">暂无数据</p>';
+        }
+
+        async function deleteItem(id) {
+            if (confirm("确定删除这条记录吗？")) {
+                const { error } = await supabaseClient.from('poker_logs').delete().eq('id', id);
+                if (!error) fetchData();
+            }
+        }
+
+        function switchLevel(lvl) {
+            currentLevel = lvl;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.innerText.includes(lvl) || (lvl==='ALL' && el.innerText==='全部汇总')));
+            render();
+        }
+    </script>
+</body>
+</html>
