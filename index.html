@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AceTracker Pro v3.5</title>
+    <title>AceTracker Pro v4.0</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,73 +14,102 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: rgba(30, 30, 30, 0.9); --win: #FF4757; --lose: #2ED573; --text: #F0F0F0; }
-        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: #161616; --win: #FF4757; --lose: #2ED573; --text: #F0F0F0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
-        /* 开场动画 */
-        #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
-        .logo-anim { font-size: 60px; color: var(--gold); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+        /* 状态层 */
+        #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; }
+        .logo-anim { font-size: 60px; color: var(--gold); animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
 
-        /* 登录与主界面布局 */
-        #auth-section, #app-section { display: none; min-height: 100vh; flex-direction: column; }
-        .glass-panel { background: var(--card); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 25px; margin: 15px; }
+        /* 面板与布局 */
+        #auth-section, #app-section { display: none; min-height: 100vh; flex-direction: column; padding-bottom: 40px; }
+        .glass-panel { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; margin: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
         
-        input { width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
-        .btn-main { background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; }
+        /* 交互组件 */
+        input { width: 100%; padding: 16px; background: #000; border: 1px solid #333; color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        input:focus { border-color: var(--gold); }
+        .btn-main { background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: 800; font-size: 16px; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .nav-tabs { display: flex; overflow-x: auto; padding: 15px; gap: 10px; sticky; top: 0; z-index: 100; background: var(--bg); }
-        .nav-item { padding: 8px 18px; border-radius: 15px; background: #222; color: #888; white-space: nowrap; font-size: 13px; font-weight: 600; }
+        /* 顶部导航 */
+        .nav-tabs { display: flex; overflow-x: auto; padding: 15px; gap: 10px; position: sticky; top: 0; z-index: 100; background: rgba(10,10,10,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .nav-item { padding: 10px 20px; border-radius: 20px; background: #222; color: #888; white-space: nowrap; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
         .nav-item.active { background: var(--gold); color: #000; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
 
-        .chart-box { height: 320px; margin-bottom: 20px; }
-        .item-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--gold); }
-        .btn-sm { padding: 8px; border-radius: 8px; border: none; font-size: 12px; color: #fff; background: rgba(255,255,255,0.1); flex: 1; }
+        /* 快速记分筹码 */
+        .batch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .chip { background: #1f1f1f; padding: 14px 0; text-align: center; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; border: 1px solid #333; transition: background 0.2s; }
+        .chip:active { background: #333; }
+
+        /* 图表与列表 */
+        .chart-box { height: 320px; margin: 0 15px 20px 15px; background: var(--card); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .item-card { background: var(--card); padding: 18px; border-radius: 16px; margin-bottom: 12px; border-left: 4px solid var(--gold); display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.02); }
+        
+        /* 操作按钮组 (新增) */
+        .action-btns { display: flex; gap: 10px; margin-top: 5px; }
+        .btn-sm { padding: 10px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; color: #fff; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: opacity 0.2s; }
+        .btn-sm:active { opacity: 0.7; }
+        .btn-edit { background: rgba(255,255,255,0.1); color: #ccc; }
+        .btn-delete { background: rgba(255,71,87,0.15); color: var(--win); border: 1px solid rgba(255,71,87,0.3); }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 10000; display: none; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
+    <div id="toast" class="toast">提示信息</div>
+
     <div id="splash">
         <div class="logo-anim">♠</div>
-        <div style="color:var(--gold); margin-top:20px; letter-spacing:3px;">ACETRACKER PRO</div>
+        <div style="color:var(--gold); margin-top:20px; letter-spacing:4px; font-weight: 600;">ACETRACKER PRO</div>
     </div>
 
     <div id="auth-section">
-        <div class="glass-panel" style="margin-top:auto; margin-bottom:auto;">
-            <h2 style="color:var(--gold); text-align:center;">数据同步授权</h2>
-            <input type="email" id="emailInput" placeholder="输入白名单 QQ 邮箱">
-            <button class="btn-main" onclick="handleLogin()">发送登录链路</button>
+        <div class="glass-panel" style="margin-top:20vh;">
+            <h2 style="color:var(--gold); text-align:center; margin-bottom: 25px;">数据同步授权</h2>
+            <input type="email" id="emailInput" placeholder="输入系统白名单邮箱">
+            <button class="btn-main" id="loginBtn" onclick="handleLogin()">获取加密登录链路</button>
         </div>
     </div>
 
     <div id="app-section">
-        <div class="nav-tabs">
+        <div class="nav-tabs" id="navTabs">
             <div class="nav-item active" onclick="switchLevel('ALL')">全部汇总</div>
-            <div class="nav-item" onclick="switchLevel('0.5/1')">0.5/1</div>
-            <div class="nav-item" onclick="switchLevel('1/2')">1/2</div>
-            <div class="nav-item" onclick="switchLevel('10/20')">10/20</div>
+            <div class="nav-item" onclick="switchLevel('0.5/1')">0.5/1 级别</div>
+            <div class="nav-item" onclick="switchLevel('1/2')">1/2 级别</div>
+            <div class="nav-item" onclick="switchLevel('10/20')">10/20 高额</div>
+        </div>
+
+        <div class="chart-box" id="mainChart"></div>
+
+        <div class="glass-panel" style="margin-top: 0;">
+            <h4 style="margin:0 0 15px 0; color:#fff; display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-bolt" style="color:var(--gold)"></i> 快速记分</span>
+                <span id="currentLevelHint" style="font-size: 12px; color: #666; font-weight: normal;">当前录入: 1/2</span>
+            </h4>
+            <input type="number" id="quickAmount" placeholder="输入本场净盈亏积分" style="font-size: 18px; font-weight: bold; text-align: center;">
+            <div class="batch-grid">
+                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(100)">+100</div>
+                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(500)">+500</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-100)">-100</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-500)">-500</div>
+            </div>
+            <button class="btn-main" id="submitBtn" onclick="submitData()">同步至云端数据库</button>
         </div>
 
         <div style="padding: 0 15px;">
-            <div class="chart-box" id="mainChart"></div>
-
-            <div class="glass-panel" style="margin: 0 0 20px 0;">
-                <h4 style="margin:0 0 15px 0; color:var(--gold);">快速记分</h4>
-                <input type="number" id="quickAmount" placeholder="本场盈亏积分">
-                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:15px;">
-                    <div style="background:#222; padding:12px; text-align:center; border-radius:10px; color:var(--win);" onclick="adjustAmount(100)">+100</div>
-                    <div style="background:#222; padding:12px; text-align:center; border-radius:10px; color:var(--win);" onclick="adjustAmount(500)">+500</div>
-                    <div style="background:#222; padding:12px; text-align:center; border-radius:10px; color:var(--lose);" onclick="adjustAmount(-100)">-100</div>
-                    <div style="background:#222; padding:12px; text-align:center; border-radius:10px; color:var(--lose);" onclick="adjustAmount(-500)">-500</div>
-                </div>
-                <button class="btn-main" onclick="submitData()">同步至云端</button>
-            </div>
-
+            <h3 style="margin: 10px 0 15px 5px; font-size: 15px; color: #888; font-weight: normal;">近期对局明细</h3>
             <div id="historyList"></div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // 核心配置与状态管理
+        // ==========================================
         const SUPABASE_URL = 'https://bemgvdxisardejdvbnif.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_qfMjJSCX0FGWbgnurfcUEg_RCBvb9Pz';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -88,17 +117,32 @@
         let currentUser = null;
         let currentLevel = 'ALL';
         let fullData = [];
-        let myChart = echarts.init(document.getElementById('mainChart'));
+        let myChart = null;
 
-        // 核心监听：捕捉登录状态
+        // 自定义 Toast 提示 (比系统 alert 体验更好)
+        function showToast(msg, duration = 2500) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, duration);
+        }
+
+        // ==========================================
+        // 身份验证与初始化
+        // ==========================================
+        window.onload = () => {
+            myChart = echarts.init(document.getElementById('mainChart'));
+            window.addEventListener('resize', () => myChart && myChart.resize());
+        };
+
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
                 currentUser = session.user;
                 document.getElementById('splash').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'none';
-                document.getElementById('app-section').style.display = 'block';
+                document.getElementById('app-section').style.display = 'flex';
                 fetchData();
-            } else {
+            } else if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
                 document.getElementById('splash').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'flex';
             }
@@ -106,121 +150,245 @@
 
         async function handleLogin() {
             const email = document.getElementById('emailInput').value.trim();
-            if (!email) return alert("请输入邮箱");
-            const { error } = await supabaseClient.auth.signInWithOtp({ 
-                email, options: { emailRedirectTo: window.location.href }
-            });
-            if (error) alert(error.message);
-            else alert("请前往 QQ 邮箱，长按并复制登录链接到此浏览器打开！");
+            const btn = document.getElementById('loginBtn');
+            if (!email) return showToast("请输入有效的邮箱地址");
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
+                
+                const { error } = await supabaseClient.auth.signInWithOtp({ 
+                    email, options: { emailRedirectTo: window.location.href }
+                });
+                if (error) throw error;
+                alert("系统已发送验证链接至您的邮箱，请长按链接复制并在当前浏览器打开！");
+            } catch (err) {
+                showToast("登录请求异常: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '获取加密登录链路';
+            }
         }
 
+        // ==========================================
+        // 核心业务：增删改查 (CRUD) 健壮版
+        // ==========================================
         async function fetchData() {
-            const { data, error } = await supabaseClient
-                .from('poker_logs')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: true });
-            
-            if (!error) {
+            try {
+                if(myChart) myChart.showLoading({ color: '#D4AF37', maskColor: 'rgba(10,10,10,0.8)' });
+                
+                const { data, error } = await supabaseClient
+                    .from('poker_logs')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: true }); // 严格按时间正序排序
+                
+                if (error) throw error;
                 fullData = data || [];
-                // 针对移动端渲染优化的延迟执行
-                setTimeout(render, 100);
+                setTimeout(render, 150); // 微延迟确保移动端重绘不卡顿
+            } catch (err) {
+                showToast("数据拉取失败: " + err.message);
+            } finally {
+                if(myChart) myChart.hideLoading();
             }
         }
 
         function adjustAmount(val) {
             const input = document.getElementById('quickAmount');
             input.value = (parseFloat(input.value) || 0) + val;
+            if(navigator.vibrate) navigator.vibrate(30); // 触觉反馈
         }
 
+        // 【增】存入数据
         async function submitData() {
             const val = parseFloat(document.getElementById('quickAmount').value);
-            if (isNaN(val)) return alert("无效数值");
+            const btn = document.getElementById('submitBtn');
+            
+            // 异常值拦截
+            if (isNaN(val)) return showToast("无效数值，请先输入或点击筹码");
+            if (val > 1000000 || val < -1000000) return showToast("数值过大，请确认输入是否有误");
 
-            const { error } = await supabaseClient.from('poker_logs').insert([{
-                user_id: currentUser.id, amount: val, level: currentLevel === 'ALL' ? '1/2' : currentLevel
-            }]);
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
 
-            if (!error) {
+                const targetLevel = currentLevel === 'ALL' ? '1/2' : currentLevel;
+                const { error } = await supabaseClient.from('poker_logs').insert([{
+                    user_id: currentUser.id, 
+                    amount: val, 
+                    level: targetLevel
+                }]);
+
+                if (error) throw error;
+                
                 document.getElementById('quickAmount').value = '';
-                fetchData();
-            } else {
-                alert("存入失败: " + error.message);
+                showToast("记录已成功同步");
+                await fetchData(); // 重新拉取并渲染
+            } catch (err) {
+                showToast("存入失败: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '同步至云端数据库';
             }
         }
 
+        // 【改】修改数据
+        async function editItem(id, currentAmount) {
+            // 使用原生 prompt 获取新值，并带入旧值作为默认值
+            const newVal = prompt("请输入修正后的本场积分：", currentAmount);
+            if (newVal === null) return; // 用户点击了取消
+            
+            const parsedVal = parseFloat(newVal);
+            if (isNaN(parsedVal)) return showToast("修改失败：请输入有效的数字！");
+            if (parsedVal === currentAmount) return showToast("数值未发生变化");
+
+            try {
+                // 执行更新
+                const { error } = await supabaseClient
+                    .from('poker_logs')
+                    .update({ amount: parsedVal })
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id); // 双重保险，只能改自己的
+
+                if (error) throw error;
+                showToast("记录修改成功");
+                await fetchData(); // 重新计算图表并渲染
+            } catch (err) {
+                alert("修改失败，请检查数据库 UPDATE 权限。\n报错信息: " + err.message);
+            }
+        }
+
+        // 【删】删除数据
+        async function deleteItem(id) {
+            if (!confirm("⚠️ 危险操作\n删除后数据将无法恢复，确定要移除这笔记录吗？")) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('poker_logs')
+                    .delete()
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id); // 双重保险
+
+                if (error) throw error;
+                showToast("记录已永久移除");
+                await fetchData(); // 重新计算图表并渲染
+            } catch (err) {
+                alert("删除失败，请检查数据库 DELETE 权限。\n报错信息: " + err.message);
+            }
+        }
+
+        // ==========================================
+        // UI 渲染逻辑
+        // ==========================================
         function switchLevel(lvl) {
             currentLevel = lvl;
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.innerText.includes(lvl) || (lvl==='ALL' && el.innerText.includes('全部'))));
+            document.getElementById('currentLevelHint').innerText = lvl === 'ALL' ? '默认录入: 1/2' : `当前录入: ${lvl}`;
+            
+            // 更新导航栏状态
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el.innerText.includes(lvl) || (lvl === 'ALL' && el.innerText.includes('全部'))) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
             render();
         }
 
         function render() {
+            if(!myChart) return;
             const filtered = currentLevel === 'ALL' ? fullData : fullData.filter(d => d.level === currentLevel);
             
-            // 计算累计盈亏曲线
+            // 【核心】计算累加曲线 (基于时间正序的数据)
             let sum = 0;
-            const lineData = filtered.map(d => { sum += d.amount; return sum; });
-            const xAxisData = filtered.map((_, i) => `No.${i+1}`);
+            const lineData = filtered.map(d => { 
+                sum += parseFloat(d.amount); 
+                return sum; 
+            });
+            // X轴使用场次，避免一天多场导致节点重叠
+            const xAxisData = filtered.map((_, i) => `第 ${i+1} 局`);
 
+            // 图表渲染配置 (支持负数自动缩放)
             myChart.setOption({
                 backgroundColor: 'transparent',
-                grid: { top: 40, bottom: 40, left: 50, right: 20 },
-                tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+                grid: { top: 30, bottom: 25, left: 55, right: 15 },
+                tooltip: { 
+                    trigger: 'axis', 
+                    backgroundColor: 'rgba(20,20,20,0.9)', 
+                    borderColor: '#333', 
+                    textStyle: { color: '#fff' }
+                },
                 xAxis: { 
                     type: 'category', 
                     data: xAxisData,
-                    axisLabel: { color: '#555', interval: Math.floor(xAxisData.length / 5) },
+                    axisLabel: { color: '#666', fontSize: 11 },
                     axisLine: { lineStyle: { color: '#333' } }
                 },
                 yAxis: { 
                     type: 'value', 
-                    scale: true, // 【核心修复】自动缩放坐标轴，显示负值
-                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
-                    axisLabel: { color: '#888' }
+                    scale: true, // 允许 Y 轴根据正负值自动伸缩
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
+                    axisLabel: { color: '#999', fontSize: 11, formatter: '{value}' }
                 },
                 series: [{
                     data: lineData,
                     type: 'line',
-                    smooth: true,
+                    smooth: 0.3,
                     symbol: 'circle',
-                    symbolSize: 8,
-                    lineStyle: { 
-                        width: 4, 
-                        color: new echarts.graphic.LinearGradient(0,0,1,0, [{offset:0, color:'#D4AF37'},{offset:1, color:'#FF3366'}]) 
-                    },
+                    symbolSize: 6,
+                    lineStyle: { width: 3, color: '#D4AF37' },
                     areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(212,175,55,0.2)'},{offset:1, color:'transparent'}])
+                        color: new echarts.graphic.LinearGradient(0,0,0,1, [
+                            {offset: 0, color: 'rgba(212,175,55,0.2)'},
+                            {offset: 1, color: 'transparent'}
+                        ])
                     },
-                    // 根据盈亏变色
                     itemStyle: {
-                        color: function(params) {
-                            return params.value >= 0 ? '#FF3366' : '#2ED573';
-                        }
-                    }
+                        color: params => params.value >= 0 ? '#FF4757' : '#2ED573',
+                        borderColor: '#0a0a0a',
+                        borderWidth: 1
+                    },
+                    animationDuration: 800
                 }]
             });
 
-            // 列表渲染
+            // 列表渲染 (使用倒序，最新打的牌局在最上面)
             let html = '';
-            filtered.slice().reverse().forEach(d => {
-                html += `
-                    <div class="item-card" style="border-left-color: ${d.amount>=0?'var(--win)':'var(--lose)'}">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-size:11px; color:#666;">${new Date(d.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
-                                <div style="font-size:12px; color:var(--gold);">${d.level}</div>
+            const reversed = [...filtered].reverse(); 
+            
+            if (reversed.length === 0) {
+                html = '<div style="text-align:center; color:#555; padding:30px; font-size: 14px;">该级别暂无云端数据</div>';
+            } else {
+                reversed.forEach(d => {
+                    const isWin = d.amount >= 0;
+                    html += `
+                        <div class="item-card" style="border-left-color: ${isWin ? 'var(--win)' : 'var(--lose)'}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-size:12px; color:#777; margin-bottom:4px;">
+                                        ${new Date(d.created_at).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                                    </div>
+                                    <span style="font-size:11px; color:#000; background: var(--gold); padding: 2px 8px; border-radius: 8px; font-weight: bold;">
+                                        ${d.level}
+                                    </span>
+                                </div>
+                                <div style="font-size:24px; font-weight:900; font-family: 'SF Pro Display', sans-serif; color:${isWin ? 'var(--win)' : 'var(--lose)'}">
+                                    ${isWin ? '+' : ''}${d.amount}
+                                </div>
                             </div>
-                            <div style="font-size:20px; font-weight:bold; color:${d.amount>=0?'var(--win)':'var(--lose)'}">
-                                ${d.amount>=0?'+':''}${d.amount}
+                            <div class="action-btns">
+                                <button class="btn-sm btn-edit" onclick="editItem('${d.id}', ${d.amount})">
+                                    <i class="fas fa-edit"></i> 修改金额
+                                </button>
+                                <button class="btn-sm btn-delete" onclick="deleteItem('${d.id}')">
+                                    <i class="fas fa-trash-alt"></i> 删除记录
+                                </button>
                             </div>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('historyList').innerHTML = html || '<div style="text-align:center; color:#444; padding:20px;">暂无该级别对局记录</div>';
+                        </div>`;
+                });
+            }
+            document.getElementById('historyList').innerHTML = html;
         }
-
-        window.addEventListener('resize', () => myChart.resize());
     </script>
 </body>
 </html>
