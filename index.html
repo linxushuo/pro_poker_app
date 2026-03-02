@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AceTracker Pro v4.1</title>
+    <title>AceTracker Pro v4.2</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: #161616; --win: #FF4757; --lose: #2ED573; --text: #F0F0F0; }
+        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: #161616; --win: #FF3B30; /* 苹果标准红 */ --lose: #34C759; /* 苹果标准绿 */ --text: #F0F0F0; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
         #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; }
@@ -39,7 +39,6 @@
         .chip { background: #1f1f1f; padding: 14px 0; text-align: center; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; border: 1px solid #333; transition: background 0.2s; }
         .chip:active { background: #333; }
 
-        /* 给图表框加了一点隐约的光晕，烘托红线 */
         .chart-box { height: 320px; margin: 0 15px 20px 15px; background: var(--card); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
         .item-card { background: var(--card); padding: 18px; border-radius: 16px; margin-bottom: 12px; border-left: 4px solid var(--gold); display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.02); }
         
@@ -47,7 +46,7 @@
         .btn-sm { padding: 10px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; color: #fff; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: opacity 0.2s; }
         .btn-sm:active { opacity: 0.7; }
         .btn-edit { background: rgba(255,255,255,0.1); color: #ccc; }
-        .btn-delete { background: rgba(255,71,87,0.15); color: var(--win); border: 1px solid rgba(255,71,87,0.3); }
+        .btn-delete { background: rgba(255,71,87,0.15); color: #FF4757; border: 1px solid rgba(255,71,87,0.3); }
 
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 10000; display: none; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
     </style>
@@ -77,6 +76,8 @@
             <div class="nav-item" onclick="switchLevel('10/20')">10/20 高额</div>
         </div>
 
+        <div id="totalWaterDisplay" style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--gold);">总计: 0</div>
+        
         <div class="chart-box" id="mainChart"></div>
 
         <div class="glass-panel" style="margin-top: 0;">
@@ -86,10 +87,10 @@
             </h4>
             <input type="number" id="quickAmount" placeholder="输入本场净盈亏积分" style="font-size: 18px; font-weight: bold; text-align: center;">
             <div class="batch-grid">
-                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(100)">+100</div>
-                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(500)">+500</div>
-                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-100)">-100</div>
-                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-500)">-500</div>
+                <div class="chip" style="color:var(--win); border-color: rgba(255,59,48,0.2)" onclick="adjustAmount(100)">+100</div>
+                <div class="chip" style="color:var(--win); border-color: rgba(255,59,48,0.2)" onclick="adjustAmount(500)">+500</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(52,199,89,0.2)" onclick="adjustAmount(-100)">-100</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(52,199,89,0.2)" onclick="adjustAmount(-500)">-500</div>
             </div>
             <button class="btn-main" id="submitBtn" onclick="submitData()">同步至云端数据库</button>
         </div>
@@ -108,7 +109,7 @@
         let currentUser = null;
         let currentLevel = 'ALL';
         let fullData = [];
-        let myChart = null; // 【优化点1】最开始不给图表引擎分配画板
+        let myChart = null; 
 
         function showToast(msg, duration = 2500) {
             const toast = document.getElementById('toast');
@@ -123,11 +124,9 @@
                 document.getElementById('splash').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'none';
                 
-                // 【核心修复】先让主容器显示出来，产生实际的宽高
                 const appSection = document.getElementById('app-section');
                 appSection.style.display = 'flex'; 
 
-                // 【优化点2】容器可视后，再唤醒图表引擎开始测绘
                 if (!myChart) {
                     myChart = echarts.init(document.getElementById('mainChart'));
                     window.addEventListener('resize', () => myChart && myChart.resize());
@@ -163,7 +162,7 @@
 
         async function fetchData() {
             try {
-                if(myChart) myChart.showLoading({ color: '#FF3366', maskColor: 'rgba(10,10,10,0.8)', text: '绘制中...' });
+                if(myChart) myChart.showLoading({ color: '#D4AF37', maskColor: 'rgba(10,10,10,0.8)', text: '绘制中...' });
                 
                 const { data, error } = await supabaseClient
                     .from('poker_logs')
@@ -264,67 +263,93 @@
 
         function render() {
             if(!myChart) return;
-            // 【终极必杀】每次渲染前，强制重置并获取当前容器的最新物理尺寸
             myChart.resize(); 
 
             const filtered = currentLevel === 'ALL' ? fullData : fullData.filter(d => d.level === currentLevel);
             
+            // 数据处理：分离出单局数据(柱子)和累计数据(折线)
             let sum = 0;
-            const lineData = filtered.map(d => { sum += parseFloat(d.amount); return sum; });
-            const xAxisData = filtered.map((_, i) => `局 ${i+1}`);
+            const barData = [];
+            const lineData = [];
+            const xAxisData = [];
 
+            filtered.forEach((d, i) => {
+                const amt = parseFloat(d.amount);
+                sum += amt;
+                barData.push(amt);
+                lineData.push(sum);
+                xAxisData.push(`局${i+1}`);
+            });
+
+            // 更新总计文字
+            const totalEl = document.getElementById('totalWaterDisplay');
+            totalEl.innerText = `总计: ${sum > 0 ? '+' : ''}${sum}`;
+            totalEl.style.color = sum >= 0 ? 'var(--win)' : 'var(--lose)';
+
+            // 【核心替换】：完美融合截图里的红绿柱子+金线混合双轴设计
             myChart.setOption({
                 backgroundColor: 'transparent',
-                grid: { top: 35, bottom: 25, left: 55, right: 15 },
+                grid: { top: 40, bottom: 25, left: 45, right: 45 }, // 左右留出空间给双坐标轴
                 tooltip: { 
                     trigger: 'axis', 
+                    axisPointer: { type: 'shadow' },
                     backgroundColor: 'rgba(20,20,20,0.9)', 
-                    borderColor: '#FF3366', 
+                    borderColor: '#333', 
                     textStyle: { color: '#fff' }
                 },
                 xAxis: { 
                     type: 'category', 
                     data: xAxisData,
-                    axisLabel: { color: '#666', fontSize: 10 },
+                    axisLabel: { color: '#888', fontSize: 10 },
                     axisLine: { lineStyle: { color: '#333' } }
                 },
-                yAxis: { 
-                    type: 'value', 
-                    scale: true, 
-                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
-                    axisLabel: { color: '#888', fontSize: 11, formatter: '{value}' }
-                },
-                series: [{
-                    data: lineData,
-                    type: 'line',
-                    smooth: 0.4,
-                    symbol: 'circle',
-                    symbolSize: 8,
-                    // 【红线加强】不仅加粗了红线，还加了发光阴影特效
-                    lineStyle: { 
-                        width: 4, 
-                        color: '#FF3366', 
-                        shadowColor: 'rgba(255, 51, 102, 0.4)', 
-                        shadowBlur: 10, 
-                        shadowOffsetY: 4 
+                yAxis: [
+                    {
+                        // 左轴：给柱状图（单局盈亏）用的
+                        type: 'value', 
+                        scale: true, 
+                        splitLine: { show: false }, // 隐藏柱子的网格线，让画面更干净
+                        axisLabel: { color: '#888', fontSize: 10 }
                     },
-                    areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0,0,0,1, [
-                            {offset: 0, color: 'rgba(255,51,102,0.3)'},
-                            {offset: 1, color: 'transparent'}
-                        ])
+                    {
+                        // 右轴：给折线图（累计盈亏）用的
+                        type: 'value', 
+                        scale: true, 
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
+                        axisLabel: { color: 'var(--gold)', fontSize: 10 }
+                    }
+                ],
+                series: [
+                    {
+                        name: '单局盈亏',
+                        type: 'bar',
+                        yAxisIndex: 0, // 绑定左边的 Y 轴
+                        barWidth: '45%',
+                        itemStyle: {
+                            // 大于 0 红色，小于 0 绿色
+                            color: params => params.value >= 0 ? '#FF3B30' : '#34C759',
+                            borderRadius: [4, 4, 0, 0] // 柱子顶部加一点圆角
+                        },
+                        data: barData,
+                        animationDuration: 1000
                     },
-                    itemStyle: {
-                        color: params => params.value >= 0 ? '#FF3366' : '#2ED573',
-                        borderColor: '#0a0a0a',
-                        borderWidth: 2
-                    },
-                    // 【舒展动画】增加平滑的动画时长和缓动效果
-                    animationDuration: 2000,
-                    animationEasing: 'cubicOut'
-                }]
+                    {
+                        name: '累计走势',
+                        type: 'line',
+                        yAxisIndex: 1, // 绑定右边的 Y 轴
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 6,
+                        itemStyle: { color: '#D4AF37', borderColor: '#161616', borderWidth: 2 },
+                        lineStyle: { width: 3, color: '#D4AF37' },
+                        data: lineData,
+                        animationDuration: 1500,
+                        animationEasing: 'cubicOut'
+                    }
+                ]
             });
 
+            // 历史列表渲染保持不变
             let html = '';
             const reversed = [...filtered].reverse(); 
             
