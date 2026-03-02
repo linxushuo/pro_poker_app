@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: #161616; --win: #FF3B30; /* 苹果标准红 */ --lose: #34C759; /* 苹果标准绿 */ --text: #F0F0F0; }
+        :root { --gold: #D4AF37; --bg: #0a0a0a; --card: #161616; --win: #FF3B30; --lose: #34C759; --text: #F0F0F0; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
         #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; }
@@ -58,13 +58,15 @@
     <div id="splash">
         <div class="logo-anim">♠</div>
         <div style="color:var(--gold); margin-top:20px; letter-spacing:4px; font-weight: 600;">ACETRACKER PRO</div>
+        <div style="position: absolute; bottom: 30px; font-size: 11px; color: #555; letter-spacing: 1px; text-align: center; width: 100%;">应用记录均为记分牌，远离赌博</div>
     </div>
 
     <div id="auth-section">
         <div class="glass-panel" style="margin-top:20vh;">
-            <h2 style="color:var(--gold); text-align:center; margin-bottom: 25px;">数据同步授权</h2>
-            <input type="email" id="emailInput" placeholder="输入系统白名单邮箱">
-            <button class="btn-main" id="loginBtn" onclick="handleLogin()">获取加密登录链路</button>
+            <h2 style="color:var(--gold); text-align:center; margin-bottom: 25px;">系统登录</h2>
+            <input type="email" id="emailInput" placeholder="输入系统账号 (如 pro.001@ace.com)">
+            <input type="password" id="passwordInput" placeholder="输入密码">
+            <button class="btn-main" id="loginBtn" onclick="handleLogin()">登录系统</button>
         </div>
     </div>
 
@@ -139,24 +141,35 @@
             }
         });
 
+        // 【核心修改】替换为密码登录模式
         async function handleLogin() {
             const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
             const btn = document.getElementById('loginBtn');
-            if (!email) return showToast("请输入有效的邮箱地址");
+            
+            if (!email || !password) return showToast("请输入账号和密码");
 
             try {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
-                const { error } = await supabaseClient.auth.signInWithOtp({ 
-                    email, options: { emailRedirectTo: window.location.href }
+                
+                // 使用 signInWithPassword 替代 signInWithOtp
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+                    email: email, 
+                    password: password
                 });
+                
                 if (error) throw error;
-                alert("系统已发送验证链接至您的邮箱，请长按链接复制并在当前浏览器打开！");
+                
+                showToast("验证成功，正在进入系统...");
+                // 登录成功后，onAuthStateChange 监听器会自动处理页面跳转
             } catch (err) {
-                showToast("登录请求异常: " + err.message);
+                // 如果账号密码错误会在这里提示
+                showToast("登录失败: 账号或密码错误");
+                console.error(err);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '获取加密登录链路';
+                btn.innerHTML = '登录系统';
             }
         }
 
@@ -267,7 +280,6 @@
 
             const filtered = currentLevel === 'ALL' ? fullData : fullData.filter(d => d.level === currentLevel);
             
-            // 数据处理：分离出单局数据(柱子)和累计数据(折线)
             let sum = 0;
             const barData = [];
             const lineData = [];
@@ -281,15 +293,13 @@
                 xAxisData.push(`局${i+1}`);
             });
 
-            // 更新总计文字
             const totalEl = document.getElementById('totalWaterDisplay');
             totalEl.innerText = `总计: ${sum > 0 ? '+' : ''}${sum}`;
             totalEl.style.color = sum >= 0 ? 'var(--win)' : 'var(--lose)';
 
-            // 【核心替换】：完美融合截图里的红绿柱子+金线混合双轴设计
             myChart.setOption({
                 backgroundColor: 'transparent',
-                grid: { top: 40, bottom: 25, left: 45, right: 45 }, // 左右留出空间给双坐标轴
+                grid: { top: 40, bottom: 25, left: 45, right: 45 },
                 tooltip: { 
                     trigger: 'axis', 
                     axisPointer: { type: 'shadow' },
@@ -305,14 +315,12 @@
                 },
                 yAxis: [
                     {
-                        // 左轴：给柱状图（单局盈亏）用的
                         type: 'value', 
                         scale: true, 
-                        splitLine: { show: false }, // 隐藏柱子的网格线，让画面更干净
+                        splitLine: { show: false },
                         axisLabel: { color: '#888', fontSize: 10 }
                     },
                     {
-                        // 右轴：给折线图（累计盈亏）用的
                         type: 'value', 
                         scale: true, 
                         splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
@@ -323,12 +331,11 @@
                     {
                         name: '单局盈亏',
                         type: 'bar',
-                        yAxisIndex: 0, // 绑定左边的 Y 轴
+                        yAxisIndex: 0,
                         barWidth: '45%',
                         itemStyle: {
-                            // 大于 0 红色，小于 0 绿色
                             color: params => params.value >= 0 ? '#FF3B30' : '#34C759',
-                            borderRadius: [4, 4, 0, 0] // 柱子顶部加一点圆角
+                            borderRadius: [4, 4, 0, 0]
                         },
                         data: barData,
                         animationDuration: 1000
@@ -336,7 +343,7 @@
                     {
                         name: '累计走势',
                         type: 'line',
-                        yAxisIndex: 1, // 绑定右边的 Y 轴
+                        yAxisIndex: 1,
                         smooth: true,
                         symbol: 'circle',
                         symbolSize: 6,
@@ -349,7 +356,6 @@
                 ]
             });
 
-            // 历史列表渲染保持不变
             let html = '';
             const reversed = [...filtered].reverse(); 
             
