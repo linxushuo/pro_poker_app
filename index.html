@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>EV Graph v5.0</title>
+    <title>EV Graph v5.1</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,58 +15,103 @@
     
     <style>
         :root { --gold: #E5C07B; --gold-dark: #D4AF37; --bg: #0d0d12; --card: #16161e; --win: #FF4757; --lose: #2ED573; --text: #E0E0E0; --accent: #2c2c3a; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; background: var(--bg); color: var(--text); 
+            overflow-x: hidden; width: 100%;
+        }
 
-        /* 极具活力的电竞感开场动画 */
-        #splash { position: fixed; inset: 0; background: linear-gradient(135deg, #130b1f, #0d0d12, #241c0a); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s; }
-        .logo-glow { position: absolute; width: 150px; height: 150px; background: radial-gradient(circle, rgba(212,175,55,0.3) 0%, rgba(0,0,0,0) 70%); animation: pulse-glow 2s infinite alternate; }
-        .logo-anim { font-size: 50px; color: var(--gold); z-index: 1; text-shadow: 0 0 20px rgba(212,175,55,0.5); }
-        @keyframes pulse-glow { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 1; } }
+        /* 极具活力的电竞感渐变闪屏 */
+        #splash { 
+            position: fixed; inset: 0; 
+            background: linear-gradient(135deg, #1a0b2e 0%, #0d0d12 50%, #2b1f0a 100%); 
+            z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transition: opacity 0.6s ease, visibility 0.6s;
+        }
+        #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        
+        .logo-glow { position: absolute; width: 180px; height: 180px; background: radial-gradient(circle, rgba(229,192,123,0.15) 0%, rgba(0,0,0,0) 70%); animation: breath 2.5s infinite ease-in-out; }
+        .logo-anim { font-size: 52px; color: var(--gold); z-index: 1; text-shadow: 0 0 30px rgba(229,192,123,0.4); }
+        @keyframes breath { 0%, 100% { transform: scale(0.9); opacity: 0.3; } 50% { transform: scale(1.1); opacity: 0.8; } }
 
         #auth-section, #app-section { display: none; min-height: 100vh; flex-direction: column; padding-bottom: 30px; }
-        .glass-panel { background: var(--card); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; margin: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+        .glass-panel { background: var(--card); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 18px; margin: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
         
-        /* 年轻化控件：缩小尺寸，增加紧凑感 */
-        input { width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--accent); color: #fff; border-radius: 10px; font-size: 14px; margin-bottom: 12px; box-sizing: border-box; outline: none; transition: all 0.3s; }
-        input:focus { border-color: var(--gold); background: rgba(0,0,0,0.5); }
-        .btn-main { background: linear-gradient(135deg, var(--gold), #c49a2a); color: #000; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: 800; font-size: 14px; cursor: pointer; transition: transform 0.1s, opacity 0.2s; box-shadow: 0 4px 15px rgba(212,175,55,0.2); }
+        input { 
+            width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--accent); 
+            color: #fff; border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; 
+            transition: border 0.3s; touch-action: manipulation;
+        }
+        input:focus { border-color: var(--gold); }
+        
+        .btn-main { 
+            background: linear-gradient(135deg, var(--gold), #c49a2a); color: #000; border: none; 
+            padding: 12px; border-radius: 10px; width: 100%; font-weight: 800; font-size: 14px; 
+            cursor: pointer; transition: transform 0.1s; touch-action: manipulation;
+        }
         .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-        /* 顶部导航与数据筛选 */
-        .nav-tabs { display: flex; overflow-x: auto; padding: 12px; gap: 8px; position: sticky; top: 0; z-index: 100; background: rgba(13,13,18,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .nav-item { padding: 8px 16px; border-radius: 14px; background: var(--accent); color: #888; white-space: nowrap; font-size: 13px; font-weight: 600; transition: all 0.3s ease; cursor: pointer; border: 1px solid transparent; }
-        .nav-item.active { background: rgba(212,175,55,0.15); color: var(--gold); border-color: rgba(212,175,55,0.3); }
+        /* iOS 优化导航栏 */
+        .nav-tabs { 
+            display: flex; overflow-x: auto; padding: 10px 12px; gap: 8px; 
+            position: sticky; top: 0; z-index: 100; 
+            background: rgba(13,13,18,0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .nav-item { 
+            padding: 8px 16px; border-radius: 12px; background: var(--accent); color: #888; 
+            white-space: nowrap; font-size: 12px; font-weight: 600; transition: all 0.3s; 
+            cursor: pointer; border: 1px solid transparent; touch-action: manipulation;
+        }
+        .nav-item.active { background: rgba(229,192,123,0.15); color: var(--gold); border-color: rgba(229,192,123,0.3); }
         .nav-tabs::-webkit-scrollbar { display: none; }
 
-        /* 专业统计看板 */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 12px 15px 12px; }
         .stat-card { background: var(--card); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 8px; text-align: center; }
-        .stat-title { font-size: 11px; color: #777; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-val { font-size: 16px; font-weight: 800; color: #fff; font-family: 'SF Pro Display', sans-serif; }
+        .stat-label { font-size: 10px; color: #666; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
+        .stat-value { font-size: 15px; font-weight: 900; color: #fff; font-family: 'SF Pro Display', sans-serif; }
 
-        .chart-box { height: 260px; margin: 0 12px 15px 12px; background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.03); }
+        .chart-box { height: 280px; margin: 0 12px 15px 12px; background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.03); }
         
-        /* 紧凑型记分筹码 */
         .batch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
-        .chip { background: #1a1a24; padding: 12px 0; text-align: center; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; border: 1px solid var(--accent); transition: background 0.2s; }
-        .chip:active { background: #2a2a3a; }
+        .chip { 
+            background: #1a1a24; padding: 12px 0; text-align: center; border-radius: 10px; 
+            font-weight: bold; font-size: 13px; cursor: pointer; border: 1px solid var(--accent); 
+            touch-action: manipulation;
+        }
 
-        /* 时间筛选器工具栏 */
-        .filter-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 5px 15px 10px 15px; gap: 10px; }
-        .time-filters { display: flex; gap: 5px; background: var(--card); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); }
-        .time-btn { background: transparent; color: #666; border: none; padding: 6px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; transition: 0.3s; }
-        .time-btn.active { background: var(--accent); color: #fff; }
-        .month-picker { background: var(--card); border: 1px solid var(--accent); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; outline: none; }
+        .filter-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 15px 12px 15px; }
+        .time-pill-group { display: flex; background: var(--card); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); }
+        .time-pill { padding: 6px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; color: #666; cursor: pointer; transition: 0.2s; touch-action: manipulation; }
+        .time-pill.active { background: var(--accent); color: var(--gold); }
+        
+        .month-selector { 
+            background: var(--card); border: 1px solid var(--accent); color: #fff; 
+            font-size: 11px; border-radius: 6px; padding: 4px 8px; outline: none;
+        }
 
-        /* 列表项优化 */
-        .item-card { background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 10px; border-left: 3px solid var(--gold); display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.02); }
-        .action-btns { display: flex; gap: 8px; margin-top: 4px; }
-        .btn-sm { padding: 8px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: opacity 0.2s; }
-        .btn-edit { background: rgba(255,255,255,0.08); color: #bbb; }
-        .btn-delete { background: rgba(255,71,87,0.1); color: var(--win); }
+        .item-card { background: var(--card); padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; }
+        .item-amt { font-size: 22px; font-weight: 900; font-family: 'SF Pro Display', sans-serif; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .btn-mini { 
+            padding: 8px; border-radius: 8px; border: none; font-size: 11px; font-weight: 700; 
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; 
+            cursor: pointer; touch-action: manipulation;
+        }
+        .btn-edit { background: rgba(255,255,255,0.05); color: #888; }
+        .btn-del { background: rgba(255,71,87,0.08); color: var(--win); }
 
-        .toast { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); background: rgba(20,20,30,0.95); color: white; padding: 12px 20px; border-radius: 20px; font-size: 13px; z-index: 10000; display: none; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: bold; }
+        .toast { 
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%); 
+            background: rgba(255,255,255,0.95); color: #000; padding: 10px 20px; 
+            border-radius: 20px; font-size: 12px; z-index: 10001; display: none; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: 800; 
+        }
     </style>
 </head>
 <body>
@@ -76,68 +121,68 @@
     <div id="splash">
         <div class="logo-glow"></div>
         <div class="logo-anim">♠</div>
-        <div style="color:var(--gold); margin-top:15px; letter-spacing:3px; font-weight: 700; font-size: 18px; z-index: 1;">EV GRAPH</div>
-        <div style="position: absolute; bottom: 30px; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; z-index: 1;">应用记录均为记分牌 · 远离赌博</div>
+        <div style="color:var(--gold); margin-top:20px; letter-spacing:4px; font-weight: 800; font-size: 18px; z-index: 1;">EV GRAPH</div>
+        <div style="position: absolute; bottom: 35px; font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px; z-index: 1;">数据仅供娱乐分析 · 远离赌博</div>
     </div>
 
     <div id="auth-section">
-        <div class="glass-panel" style="margin-top:18vh;">
-            <h2 style="color:var(--gold); text-align:center; margin-bottom: 20px; font-size: 20px;">系统验证</h2>
-            <input type="email" id="emailInput" placeholder="输入系统账号 (ID)">
-            <input type="password" id="passwordInput" placeholder="输入访问凭证 (Password)">
-            <button class="btn-main" id="loginBtn" onclick="handleLogin()">安全接入</button>
+        <div class="glass-panel" style="margin-top:20vh;">
+            <h2 style="color:var(--gold); text-align:center; margin-bottom: 25px; font-size: 20px;">系统验证</h2>
+            <input type="email" id="emailInput" placeholder="Access ID">
+            <input type="password" id="passwordInput" placeholder="Security Token">
+            <button class="btn-main" id="loginBtn" onclick="handleLogin()">授权登录</button>
         </div>
     </div>
 
     <div id="app-section">
         <div class="nav-tabs" id="navTabs">
-            <div class="nav-item active" onclick="switchLevel('ALL')">全级别汇总</div>
-            <div class="nav-item" onclick="switchLevel('0.5/1')">0.5/1 局</div>
-            <div class="nav-item" onclick="switchLevel('1/2')">1/2 局</div>
-            <div class="nav-item" onclick="switchLevel('10/20')">10/20 局</div>
+            <div class="nav-item active" onclick="switchLevel('ALL')">ALL DATA</div>
+            <div class="nav-item" onclick="switchLevel('0.5/1')">0.5/1</div>
+            <div class="nav-item" onclick="switchLevel('1/2')">1/2</div>
+            <div class="nav-item" onclick="switchLevel('10/20')">10/20</div>
         </div>
 
-        <div id="totalWaterDisplay" style="text-align: center; font-size: 22px; font-weight: 900; margin: 5px 0 10px 0; color: var(--gold); font-family: 'SF Pro Display', sans-serif;">0</div>
+        <div id="totalWaterDisplay" style="text-align: center; font-size: 28px; font-weight: 900; margin: 10px 0; font-family: 'SF Pro Display', sans-serif;">0</div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-title">胜率分布</div>
-                <div class="stat-val" id="statWinRate" style="color: #fff;">0%</div>
+                <div class="stat-label">WIN RATE</div>
+                <div id="statWinRate" class="stat-value">0%</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">单局均效</div>
-                <div class="stat-val" id="statAvgWin" style="color: var(--gold);">0</div>
+                <div class="stat-label">AVG WIN</div>
+                <div id="statAvgWin" class="stat-value">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">单日极值(盈/亏)</div>
-                <div class="stat-val" id="statMaxSwing" style="font-size: 13px;">+0 <br> <span style="color:#666">/</span> -0</div>
+                <div class="stat-label">MAX SWING</div>
+                <div id="statMaxSwing" class="stat-value" style="font-size: 12px; line-height: 1.2;">+0<br><span style="color:#444">/</span> -0</div>
             </div>
         </div>
         
         <div class="chart-box" id="mainChart"></div>
 
         <div class="glass-panel" style="margin-top: 0; padding: 15px;">
-            <h4 style="margin:0 0 12px 0; color:#fff; display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
+            <h4 style="margin:0 0 12px 0; color:#fff; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                 <span><i class="fas fa-bolt" style="color:var(--gold)"></i> 快速结算</span>
-                <span id="currentLevelHint" style="font-size: 11px; color: #888; font-weight: normal; background: var(--accent); padding: 2px 8px; border-radius: 6px;">当前: 1/2</span>
+                <span id="currentLevelHint" style="font-size: 10px; color: #666;">Level: 1/2</span>
             </h4>
-            <input type="number" id="quickAmount" placeholder="输入本场净盈亏" style="font-size: 16px; font-weight: bold; text-align: center;">
+            <input type="number" id="quickAmount" placeholder="输入本局盈亏积分" style="font-size: 18px; font-weight: bold; text-align: center;">
             <div class="batch-grid">
-                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(100)">+100</div>
-                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.2)" onclick="adjustAmount(500)">+500</div>
-                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-100)">-100</div>
-                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.2)" onclick="adjustAmount(-500)">-500</div>
+                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.15)" onclick="adjustAmount(100)">+100</div>
+                <div class="chip" style="color:var(--win); border-color: rgba(255,71,87,0.15)" onclick="adjustAmount(500)">+500</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.15)" onclick="adjustAmount(-100)">-100</div>
+                <div class="chip" style="color:var(--lose); border-color: rgba(46,213,115,0.15)" onclick="adjustAmount(-500)">-500</div>
             </div>
-            <button class="btn-main" id="submitBtn" onclick="submitData()">写入加密区块</button>
+            <button class="btn-main" id="submitBtn" onclick="submitData()">同步至加密云端</button>
         </div>
 
         <div class="filter-toolbar">
-            <div class="time-filters">
-                <button class="time-btn active" onclick="switchTime('ALL', this)">全部</button>
-                <button class="time-btn" onclick="switchTime('MONTH', this)">本月</button>
-                <button class="time-btn" onclick="switchTime('WEEK', this)">本周</button>
+            <div class="time-pill-group">
+                <div class="time-pill active" onclick="switchTime('ALL', this)">全部</div>
+                <div class="time-pill" onclick="switchTime('MONTH', this)">本月</div>
+                <div class="time-pill" onclick="switchTime('WEEK', this)">本周</div>
             </div>
-            <input type="month" class="month-picker" id="customMonthPicker" onchange="handleMonthSearch(this)">
+            <input type="month" id="monthPicker" class="month-selector" onchange="searchByMonth(this.value)">
         </div>
 
         <div style="padding: 0 12px;">
@@ -152,12 +197,12 @@
 
         let currentUser = null;
         let currentLevel = 'ALL';
-        let currentTimeFilter = 'ALL'; // ALL, MONTH, WEEK, CUSTOM
-        let customMonthValue = '';
+        let currentTimeFilter = 'ALL'; 
+        let currentSearchMonth = ''; 
         let fullData = [];
         let myChart = null; 
 
-        function showToast(msg, duration = 2000) {
+        function showToast(msg, duration = 2500) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.display = 'block';
@@ -167,21 +212,22 @@
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
                 currentUser = session.user;
+                // 动画退出逻辑增强
                 setTimeout(() => {
-                    document.getElementById('splash').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('splash').style.visibility = 'hidden';
-                        document.getElementById('auth-section').style.display = 'none';
-                        document.getElementById('app-section').style.display = 'flex'; 
-                        if (!myChart) {
-                            myChart = echarts.init(document.getElementById('mainChart'));
-                            window.addEventListener('resize', () => myChart && myChart.resize());
-                        }
-                        fetchData();
-                    }, 500);
-                }, 800);
+                    const splash = document.getElementById('splash');
+                    splash.classList.add('hidden');
+                    
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('app-section').style.display = 'flex'; 
+                    
+                    if (!myChart) {
+                        myChart = echarts.init(document.getElementById('mainChart'));
+                        window.addEventListener('resize', () => myChart && myChart.resize());
+                    }
+                    fetchData();
+                }, 1200);
             } else if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
-                document.getElementById('splash').style.display = 'none';
+                document.getElementById('splash').classList.add('hidden');
                 document.getElementById('auth-section').style.display = 'flex';
             }
         });
@@ -190,25 +236,24 @@
             const email = document.getElementById('emailInput').value.trim();
             const password = document.getElementById('passwordInput').value.trim();
             const btn = document.getElementById('loginBtn');
-            if (!email || !password) return showToast("识别凭证不可为空");
+            if (!email || !password) return showToast("请输入账号和验证凭证");
 
             try {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 校验中...';
                 const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                showToast("接入成功，正在同步数据...");
             } catch (err) {
-                showToast("接入拒绝: 身份或凭证异常");
+                showToast("接入失败: 账号或凭证错误");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '安全接入';
+                btn.innerHTML = '授权登录';
             }
         }
 
         async function fetchData() {
             try {
-                if(myChart) myChart.showLoading({ color: '#E5C07B', maskColor: 'rgba(13,13,18,0.8)', text: '解析中...' });
+                if(myChart) myChart.showLoading({ color: '#E5C07B', maskColor: 'rgba(13,13,18,0.8)', text: '加密解析中...' });
                 const { data, error } = await supabaseClient
                     .from('poker_logs')
                     .select('*')
@@ -216,7 +261,7 @@
                     .order('created_at', { ascending: true });
                 if (error) throw error;
                 fullData = data || [];
-                setTimeout(render, 150); 
+                render(); 
             } catch (err) {
                 showToast("同步失败: " + err.message);
             } finally {
@@ -227,125 +272,111 @@
         function adjustAmount(val) {
             const input = document.getElementById('quickAmount');
             input.value = (parseFloat(input.value) || 0) + val;
-            if(navigator.vibrate) navigator.vibrate(30); 
+            if(navigator.vibrate) navigator.vibrate(25); 
         }
 
         async function submitData() {
             const val = parseFloat(document.getElementById('quickAmount').value);
             const btn = document.getElementById('submitBtn');
-            if (isNaN(val)) return showToast("异常: 请确认基数参数");
-            if (val > 1000000 || val < -1000000) return showToast("风控拦截: 数值超限");
+            if (isNaN(val)) return showToast("请输入有效的积分数值");
 
             try {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 写入中...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
                 const targetLevel = currentLevel === 'ALL' ? '1/2' : currentLevel;
                 const { error } = await supabaseClient.from('poker_logs').insert([{
                     user_id: currentUser.id, amount: val, level: targetLevel
                 }]);
                 if (error) throw error;
                 document.getElementById('quickAmount').value = '';
-                showToast("区块已记录");
+                showToast("同步成功");
                 await fetchData(); 
             } catch (err) {
-                showToast("写入拒绝: " + err.message);
+                showToast("保存失败");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '写入加密区块';
+                btn.innerHTML = '同步至加密云端';
             }
         }
 
         async function editItem(id, currentAmount) {
-            const newVal = prompt("申请修正参数：", currentAmount);
+            const newVal = prompt("请输入修正后的数值：", currentAmount);
             if (newVal === null) return; 
             const parsedVal = parseFloat(newVal);
-            if (isNaN(parsedVal)) return showToast("阻断：非数字协议");
-            if (parsedVal === currentAmount) return showToast("参数无差异");
+            if (isNaN(parsedVal)) return showToast("输入无效");
 
             try {
                 const { error } = await supabaseClient.from('poker_logs').update({ amount: parsedVal }).eq('id', id).eq('user_id', currentUser.id);
                 if (error) throw error;
-                showToast("协议覆盖成功");
+                showToast("修正成功");
                 await fetchData(); 
             } catch (err) {
-                alert("越权行为: 请检查后台 UPDATE 权限策略\n" + err.message);
+                showToast("修改失败");
             }
         }
 
         async function deleteItem(id) {
-            if (!confirm("⚠️ 警告\n此区块擦除后不可逆转，是否继续？")) return;
+            if (!confirm("确定要永久撤销这条记录吗？")) return;
             try {
                 const { error } = await supabaseClient.from('poker_logs').delete().eq('id', id).eq('user_id', currentUser.id);
                 if (error) throw error;
-                showToast("区块已粉碎");
+                showToast("撤销成功");
                 await fetchData(); 
             } catch (err) {
-                alert("越权行为: 请检查后台 DELETE 权限策略\n" + err.message);
+                showToast("删除失败");
             }
         }
 
-        // ================= 数据筛选与统计引擎 =================
         function switchLevel(lvl) {
             currentLevel = lvl;
-            document.getElementById('currentLevelHint').innerText = lvl === 'ALL' ? '默认: 1/2' : `当前: ${lvl}`;
+            document.getElementById('currentLevelHint').innerText = lvl === 'ALL' ? 'Level: 1/2' : `Level: ${lvl}`;
             document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.toggle('active', el.innerText.includes(lvl) || (lvl === 'ALL' && el.innerText.includes('全')));
+                el.classList.toggle('active', el.innerText.includes(lvl) || (lvl === 'ALL' && el.innerText.includes('ALL')));
             });
             render();
         }
 
-        function switchTime(timeType, btnElement) {
-            currentTimeFilter = timeType;
-            // 清空月份选择器
-            document.getElementById('customMonthPicker').value = '';
-            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
+        function switchTime(type, el) {
+            currentTimeFilter = type;
+            currentSearchMonth = ''; 
+            document.getElementById('monthPicker').value = '';
+            document.querySelectorAll('.time-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
             render();
         }
 
-        function handleMonthSearch(inputEl) {
-            if(!inputEl.value) {
-                switchTime('ALL', document.querySelector('.time-btn'));
-                return;
-            }
-            currentTimeFilter = 'CUSTOM';
-            customMonthValue = inputEl.value; // YYYY-MM
-            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+        function searchByMonth(monthStr) {
+            if(!monthStr) return;
+            currentTimeFilter = 'SEARCH';
+            currentSearchMonth = monthStr; 
+            document.querySelectorAll('.time-pill').forEach(p => p.classList.remove('active'));
             render();
         }
 
-        // 核心运算与渲染
         function render() {
             if(!myChart) return;
             myChart.resize(); 
 
-            // 1. 多维过滤 (级别 + 时间)
             let filtered = currentLevel === 'ALL' ? fullData : fullData.filter(d => d.level === currentLevel);
             
             const now = new Date();
             if (currentTimeFilter === 'MONTH') {
                 filtered = filtered.filter(d => {
-                    const date = new Date(d.created_at);
-                    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+                    const dDate = new Date(d.created_at);
+                    return dDate.getFullYear() === now.getFullYear() && dDate.getMonth() === now.getMonth();
                 });
             } else if (currentTimeFilter === 'WEEK') {
-                const day = now.getDay() || 7; 
-                const monday = new Date(now);
-                monday.setHours(0,0,0,0);
-                monday.setDate(now.getDate() - day + 1);
-                filtered = filtered.filter(d => new Date(d.created_at) >= monday);
-            } else if (currentTimeFilter === 'CUSTOM') {
-                filtered = filtered.filter(d => {
-                    const date = new Date(d.created_at);
-                    const mStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-                    return mStr === customMonthValue;
-                });
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay()); 
+                startOfWeek.setHours(0,0,0,0);
+                filtered = filtered.filter(d => new Date(d.created_at) >= startOfWeek);
+            } else if (currentTimeFilter === 'SEARCH') {
+                filtered = filtered.filter(d => d.created_at.startsWith(currentSearchMonth));
             }
 
-            // 2. 高阶统计引擎运算
             let sum = 0;
             let winCount = 0;
-            const dailyTotals = {};
+            const dailyData = {}; 
             const barData = [];
             const lineData = [];
             const xAxisData = [];
@@ -356,91 +387,73 @@
                 if(amt > 0) winCount++;
                 barData.push(amt);
                 lineData.push(sum);
-                xAxisData.push(`L${i+1}`); // 更简短的坐标轴文字
+                xAxisData.push(`G${i+1}`);
 
-                // 统计单日合计，用于极值计算
-                const dateKey = new Date(d.created_at).toLocaleDateString('zh-CN');
-                dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + amt;
+                const dateKey = d.created_at.split('T')[0];
+                dailyData[dateKey] = (dailyData[dateKey] || 0) + amt;
             });
 
-            // 胜率与均效
-            const totalGames = filtered.length;
-            const winRate = totalGames > 0 ? ((winCount / totalGames) * 100).toFixed(1) + '%' : '0%';
-            const avgWin = totalGames > 0 ? (sum / totalGames).toFixed(1) : '0';
-
-            // 极值计算 (寻找单日最大高峰与深谷)
-            const dailyVals = Object.values(dailyTotals);
-            const maxWin = dailyVals.length > 0 ? Math.max(...dailyVals) : 0;
-            const maxLoss = dailyVals.length > 0 ? Math.min(...dailyVals) : 0;
-
-            // 渲染看板数据
-            document.getElementById('totalWaterDisplay').innerText = `${sum > 0 ? '+' : ''}${sum}`;
-            document.getElementById('totalWaterDisplay').style.color = sum >= 0 ? 'var(--win)' : 'var(--lose)';
+            const winRate = filtered.length > 0 ? ((winCount / filtered.length) * 100).toFixed(1) : 0;
+            const avgWin = filtered.length > 0 ? (sum / filtered.length).toFixed(0) : 0;
             
-            document.getElementById('statWinRate').innerText = winRate;
-            document.getElementById('statAvgWin').innerText = `${avgWin > 0 ? '+' : ''}${avgWin}`;
-            document.getElementById('statMaxSwing').innerHTML = `<span style="color:var(--win)">+${maxWin > 0 ? maxWin : 0}</span> <br> <span style="color:var(--lose)">${maxLoss < 0 ? maxLoss : 0}</span>`;
+            const dayValues = Object.values(dailyData);
+            const maxDayWin = dayValues.length > 0 ? Math.max(...dayValues, 0) : 0;
+            const maxDayLoss = dayValues.length > 0 ? Math.min(...dayValues, 0) : 0;
 
-            // 3. ECharts 渲染配置优化
+            const totalEl = document.getElementById('totalWaterDisplay');
+            totalEl.innerText = `${sum > 0 ? '+' : ''}${sum}`;
+            totalEl.style.color = sum >= 0 ? 'var(--win)' : 'var(--lose)';
+
+            document.getElementById('statWinRate').innerText = winRate + '%';
+            document.getElementById('statAvgWin').innerText = (avgWin > 0 ? '+' : '') + avgWin;
+            document.getElementById('statMaxSwing').innerHTML = `<span style="color:var(--win)">+${maxDayWin}</span><br><span style="color:#444">/</span> <span style="color:var(--lose)">${maxDayLoss}</span>`;
+
             myChart.setOption({
                 backgroundColor: 'transparent',
-                grid: { top: 30, bottom: 20, left: 40, right: 40 },
-                tooltip: { 
-                    trigger: 'axis', axisPointer: { type: 'shadow' },
-                    backgroundColor: 'rgba(22,22,30,0.9)', borderColor: '#333', textStyle: { color: '#fff', fontSize: 12 }
-                },
+                grid: { top: 30, bottom: 20, left: 45, right: 45 },
                 xAxis: { 
                     type: 'category', data: xAxisData,
-                    axisLabel: { color: '#666', fontSize: 9 }, axisLine: { lineStyle: { color: '#2c2c3a' } }
+                    axisLabel: { color: '#555', fontSize: 9 }, axisLine: { lineStyle: { color: '#222' } }
                 },
                 yAxis: [
-                    { type: 'value', splitLine: { show: false }, axisLabel: { color: '#666', fontSize: 9 } },
-                    { type: 'value', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.03)', type: 'solid' } }, axisLabel: { color: 'var(--gold)', fontSize: 9 } }
+                    { type: 'value', splitLine: { show: false }, axisLabel: { color: '#555', fontSize: 9 } },
+                    { type: 'value', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.02)' } }, axisLabel: { color: 'var(--gold)', fontSize: 9 } }
                 ],
                 series: [
                     {
                         name: '单局', type: 'bar', yAxisIndex: 0, barWidth: '40%',
-                        itemStyle: { color: p => p.value >= 0 ? '#FF4757' : '#2ED573', borderRadius: [3, 3, 0, 0] },
-                        data: barData, animationDuration: 800
+                        itemStyle: { color: p => p.value >= 0 ? '#FF4757' : '#2ED573', borderRadius: [2, 2, 0, 0] },
+                        data: barData
                     },
                     {
-                        name: '走势', type: 'line', yAxisIndex: 1, smooth: true, symbol: 'none',
-                        itemStyle: { color: '#E5C07B' }, lineStyle: { width: 3, shadowColor: 'rgba(229,192,123,0.3)', shadowBlur: 10 },
-                        data: lineData, animationDuration: 1200
+                        name: '累计', type: 'line', yAxisIndex: 1, smooth: true, symbol: 'circle', symbolSize: 4,
+                        itemStyle: { color: '#E5C07B' }, lineStyle: { width: 2, color: '#E5C07B' },
+                        data: lineData
                     }
                 ]
             });
 
-            // 4. 明细列表渲染
             let html = '';
             const reversed = [...filtered].reverse(); 
             if (reversed.length === 0) {
-                html = '<div style="text-align:center; color:#555; padding:40px; font-size: 13px;">该维度下无区块数据</div>';
+                html = '<div style="text-align:center; color:#444; padding:40px; font-size: 12px;">无记录数据</div>';
             } else {
                 reversed.forEach(d => {
                     const isWin = d.amount >= 0;
                     html += `
                         <div class="item-card" style="border-left-color: ${isWin ? 'var(--win)' : 'var(--lose)'}">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <div style="font-size:11px; color:#777; margin-bottom:4px; font-family: monospace;">
-                                        ${new Date(d.created_at).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-')}
-                                    </div>
-                                    <span style="font-size:10px; color:#000; background: var(--gold); padding: 2px 6px; border-radius: 6px; font-weight: bold;">
-                                        LV.${d.level}
-                                    </span>
+                            <div class="item-header">
+                                <div class="item-meta">
+                                    <span class="item-time">${new Date(d.created_at).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-')}</span>
+                                    <span class="item-lvl">LV.${d.level}</span>
                                 </div>
-                                <div style="font-size:20px; font-weight:900; font-family: 'SF Pro Display', sans-serif; color:${isWin ? 'var(--win)' : 'var(--lose)'}; text-shadow: 0 2px 10px rgba(${isWin ? '255,71,87' : '46,213,115'}, 0.2);">
+                                <div class="item-amt" style="color:${isWin ? 'var(--win)' : 'var(--lose)'}">
                                     ${isWin ? '+' : ''}${d.amount}
                                 </div>
                             </div>
                             <div class="action-btns">
-                                <button class="btn-sm btn-edit" onclick="editItem('${d.id}', ${d.amount})">
-                                    <i class="fas fa-pen"></i> 修正
-                                </button>
-                                <button class="btn-sm btn-delete" onclick="deleteItem('${d.id}')">
-                                    <i class="fas fa-eraser"></i> 擦除
-                                </button>
+                                <button class="btn-mini btn-edit" onclick="editItem('${d.id}', ${d.amount})">修正</button>
+                                <button class="btn-mini btn-del" onclick="deleteItem('${d.id}')">撤销</button>
                             </div>
                         </div>`;
                 });
